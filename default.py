@@ -240,6 +240,16 @@ g_txheaders = {
               'User-Agent': 'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US;rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3 ( .NET CLR 3.5.30729)',
               }
 
+#Checking for proxy setting
+
+if __settings__.getSetting("proxy_enabled") == "true":
+	g_proxy_enabled = True
+	g_proxy_host = __settings__.getSetting("proxy_host")
+	g_proxy_port = __settings__.getSetting("proxy_port")
+else:
+	g_proxy_enabled = False
+
+
 #Set up holding variable for session ID
 global g_sessionID
 g_sessionID=None
@@ -694,7 +704,11 @@ def getMyPlexURL(url_path, renew=False, suppress=True):
     printDebug("url = "+MYPLEX_SERVER+url_path)
 
     try:
-        conn = httplib.HTTPSConnection(MYPLEX_SERVER, timeout=5)
+        if g_proxy_enabled:
+          conn = httplib.HTTPSConnection(g_proxy_host, g_proxy_port, timeout=5)
+          conn._set_tunnel(MYPLEX_SERVER)
+        else:
+          conn = httplib.HTTPSConnection(MYPLEX_SERVER, timeout=5)
         conn.request("GET", url_path+"?X-Plex-Token="+getMyPlexToken(renew))
         data = conn.getresponse()
         if ( int(data.status) == 401 )  and not ( renew ):
@@ -792,7 +806,11 @@ def getNewMyPlexToken(suppress=True, title="Error"):
                     'Authorization': "Basic %s" % base64string}
 
     try:
-        conn = httplib.HTTPSConnection(MYPLEX_SERVER)
+        if g_proxy_enabled:
+          conn = httplib.HTTPSConnection(g_proxy_host, g_proxy_port, timeout=5)
+          conn._set_tunnel(MYPLEX_SERVER)
+        else:
+          conn = httplib.HTTPSConnection(MYPLEX_SERVER, timeout=5)
         conn.request("POST", "/users/sign_in.xml", txdata, myplex_headers)
         data = conn.getresponse()
 
@@ -845,7 +863,11 @@ def getURL(url, suppress=True, type="GET", popup=0):
 
         printDebug("url = "+url)
         printDebug("header = "+str(authHeader))
-        conn = httplib.HTTPConnection(server, timeout=8)
+        if g_proxy_enabled:
+          conn = httplib.HTTPConnection(g_proxy_host, g_proxy_port, timeout=5)
+          conn._set_tunnel(server)
+        else:
+          conn = httplib.HTTPConnection(MYPLEX_SERVER, timeout=5)
         conn.request(type, urlPath, headers=authHeader)
         data = conn.getresponse()
         
